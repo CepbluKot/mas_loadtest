@@ -2,15 +2,17 @@
 
 Goal: find how many requests per minute a MAS stand sustains, using only its HTTP API.
 
-## Ask the human first
-1. MAS URL (https origin) and admin email. The password must be in env `MAS_PASSWORD` or a 0600 file: never ask for it in chat, never put it in a flag or echo it.
-2. Custom CA (`--ca-file`) if the stand uses internal PKI.
-3. Scenario: `workflow` (platform path), `rag_read` (retrieval), `rag_write` (upload + indexing).
-4. Rate range. If unknown, propose `--min-rate 10 --max-rate 100 --step 10`.
-5. Whether the target is production. Load tests on production require an explicit yes.
+## Setup (do this before anything else)
+1. `cp .env.example .env && chmod 600 .env`. The human fills `.env` themselves: `MAS_URL`, `MAS_EMAIL`, `MAS_PASSWORD`, optional `MAS_CA_FILE` (internal PKI). Never ask for the password in chat, never write it into commands, flags or logs, never `cat .env`. If `.env` is missing or still has `change-me`, stop and ask the human to fill it.
+2. `uv run --group dev pytest -q` must be green (Python 3.12+, no runtime deps).
+
+## Ask the human
+1. Scenario: `workflow` (platform path), `rag_read` (retrieval), `rag_write` (upload + indexing).
+2. Rate range. If unknown, propose `--min-rate 10 --max-rate 100 --step 10`.
+3. Whether the target is production. Load tests on production require an explicit yes.
 
 ## Procedure
-1. `python3 -m mas_loadtest plan ...` and show the stage list and duration.
+1. `python3 -m mas_loadtest plan ...` (run from the directory that contains `.env`) and show the stage list and duration.
 2. Smoke: `run ... --min-rate 6 --max-rate 6 --step 6 --stage-seconds 60`. It must finish with `PASS` verdict and clean up.
 3. Full run with the agreed range. Runs take `stages * stage-seconds`; run in the background and read `status --session <dir>`.
 4. Report from `results/run/summary.md`. State the capacity status, last passing and first failing rate, p95 at those stages, error types. If `LOWER_BOUND`, say the limit is above the tested max and offer a higher range.

@@ -9,11 +9,12 @@ Python 3.12+, no runtime dependencies. `uv run python -m mas_loadtest ...` or `p
 
 ## Run
 ```bash
-export MAS_PASSWORD='...'            # or --password-file (mode 0600)
-python3 -m mas_loadtest plan --scenario workflow --min-rate 10 --max-rate 100 --step 10      # offline preview
-python3 -m mas_loadtest run --url https://mas.example --email admin@example.com \
-  --scenario workflow --min-rate 10 --max-rate 100 --step 10 --stage-seconds 120 [--ca-file bank.pem]
+cp .env.example .env && chmod 600 .env     # fill MAS_URL, MAS_EMAIL, MAS_PASSWORD (+ MAS_CA_FILE for internal PKI)
+python3 -m mas_loadtest plan --scenario workflow --min-rate 10 --max-rate 100 --step 10     # offline preview
+python3 -m mas_loadtest run  --scenario workflow --min-rate 10 --max-rate 100 --step 10 --stage-seconds 120
 ```
+Credentials are read from `./.env` (git-ignored), then real environment variables, then flags (`--url`, `--email`,
+`--password-file`, `--ca-file`, `--env-file`); a flag beats the environment, the environment beats `.env`.
 All options can live in a TOML file (`--params params.toml`, see `examples/params.example.toml`); flags override it.
 
 | Scenario | What is measured | Created for the run |

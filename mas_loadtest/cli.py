@@ -27,9 +27,11 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
 
     def common(command: argparse.ArgumentParser) -> None:
+        command.add_argument("--env-file", type=Path, default=Path(".env"),
+                             help="file with MAS_URL, MAS_EMAIL, MAS_PASSWORD, MAS_CA_FILE (default ./.env)")
         command.add_argument("--params", type=Path, help="TOML file with the options below; flags override it")
-        command.add_argument("--url", help="MAS origin, e.g. https://mas.example")
-        command.add_argument("--email", help="admin account email; password comes from MAS_PASSWORD or --password-file")
+        command.add_argument("--url", help="MAS origin, e.g. https://mas.example (or MAS_URL)")
+        command.add_argument("--email", help="admin account email (or MAS_EMAIL); password: MAS_PASSWORD or --password-file")
         command.add_argument("--password-file", type=Path)
         command.add_argument("--ca-file", type=Path)
         command.add_argument("--out-dir", type=Path, help="where sessions are written (default ./mas_loadtest_runs)")
@@ -67,6 +69,18 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def load_dotenv(path: Path) -> None:
+    """Export KEY=VALUE lines from path into os.environ without overriding variables already set."""
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
 def _merged(args: argparse.Namespace) -> dict[str, object]:
     values: dict[str, object] = {}
     if args.params is not None:
@@ -75,6 +89,9 @@ def _merged(args: argparse.Namespace) -> dict[str, object]:
         unknown = set(values) - PARAM_KEYS
         if unknown:
             raise SystemExit(f"unknown keys in params file: {', '.join(sorted(unknown))}")
+    for key, variable in (("url", "MAS_URL"), ("email", "MAS_EMAIL"), ("ca_file", "MAS_CA_FILE")):
+        if os.environ.get(variable):
+            values.setdefault(key, os.environ[variable])
     for key in PARAM_KEYS:
         flag = getattr(args, key, None)
         if flag is not None:
@@ -190,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     if args.command == "engine":
         return capacity.main(args.engine_args)
+    load_dotenv(getattr(args, "env_file", Path(".env")))
     handlers = {"plan": _cmd_plan, "run": _cmd_run, "cleanup": _cmd_cleanup, "status": _cmd_status}
     try:
         return handlers[args.command](args)

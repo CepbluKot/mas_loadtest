@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import stat
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -153,3 +154,17 @@ def test_login_falls_back_to_access_token_cookie_and_accepts_import_warnings(mas
     client.login("a@b.c", "secret")
     assert client.access_token == "console-token"
     assert client.import_app("app: {}", "n") == "app-1"
+
+
+def test_dotenv_feeds_url_and_email_without_overriding_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from mas_loadtest.cli import _merged, _parser, load_dotenv
+
+    env = tmp_path / ".env"
+    env.write_text('# c\nMAS_URL="https://mas.test"\nMAS_EMAIL=a@b.c\nMAS_PASSWORD=from-file\n')
+    for name in ("MAS_URL", "MAS_EMAIL", "MAS_CA_FILE"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("MAS_PASSWORD", "from-env")
+    load_dotenv(env)
+    values = _merged(_parser().parse_args(["plan", "--email", "flag@b.c"]))
+    assert values["url"] == "https://mas.test" and values["email"] == "flag@b.c"
+    assert os.environ["MAS_PASSWORD"] == "from-env"
