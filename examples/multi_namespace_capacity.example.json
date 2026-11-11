@@ -1,0 +1,47 @@
+{
+  "version": 4,
+  "mode": "workflow",
+  "results_root": "/secure/mas-benchmark-results",
+  "min_rate_per_minute": 10,
+  "max_rate_per_minute": 100,
+  "rate_step_per_minute": 10,
+  "max_total_requests": 5000,
+  "stage_seconds": 180,
+  "max_inflight_per_namespace": 8,
+  "request_timeout_seconds": 120,
+  "indexing_timeout_seconds": 600,
+  "targets": [
+    {
+      "namespace": "mas-test-a",
+      "base_url": "https://mas-test-a.example.invalid",
+      "workflows": [
+        {
+          "label": "task-one",
+          "app_id": "REPLACE_WITH_PUBLISHED_WORKFLOW_APP_ID",
+          "api_token_file": "/secure/mas-benchmark/workflow-a.token",
+          "inputs": {"query": "example task input"}
+        }
+      ],
+      "rag_reads": [
+        {
+          "label": "knowledge-one",
+          "dataset_id": "REPLACE_WITH_READ_DATASET_ID",
+          "api_token_file": "/secure/mas-benchmark/knowledge-a.token",
+          "query": "example retrieval query",
+          "top_k": 5,
+          "min_hits": 1
+        }
+      ],
+      "rag_writes": [
+        {
+          "label": "knowledge-one-upload",
+          "dataset_id": "REPLACE_WITH_DISPOSABLE_WRITE_DATASET_ID",
+          "api_token_file": "/secure/mas-benchmark/knowledge-a.token",
+          "file_path": "/secure/mas-benchmark/fixtures/example.txt",
+          "indexing_technique": "economy",
+          "process_rule": {"mode": "automatic"}
+        }
+      ]
+    }
+  ]
+}

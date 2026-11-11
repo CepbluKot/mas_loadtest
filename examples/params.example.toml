@@ -1,0 +1,11 @@
+url = "https://mas.example.com"
+email = "admin@example.com"
+# ca_file = "/path/to/bank-ca.pem"
+scenario = "workflow"        # workflow | rag_read | rag_write
+min_rate = 10                # requests per minute
+max_rate = 100
+step = 10
+stage_seconds = 120
+max_inflight = 16
+# max_p95 = 10.0
+# inputs = '{"question": "ping"}'
